@@ -13,8 +13,8 @@ export default function Landing() {
       gradient: "gradient-primary",
     },
     {
-      title: "JSON Visualizer",
-      description: "Visualize and explore JSON data with interactive node graphs",
+      title: "AI JSON Explainer",
+      description: "Transform complex JSON into human-readable explanations with AI",
       icon: Network,
       path: "/visualizer",
       gradient: "gradient-accent",

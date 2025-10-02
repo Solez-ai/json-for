@@ -1,144 +1,24 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Network, Upload, Download, Search, AlertCircle } from "lucide-react";
+import { Sparkles, Upload, AlertCircle, Loader2, FileText, BookOpen, MessageSquare, FileSearch } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
-import ReactFlow, { 
-  Node, 
-  Edge, 
-  Background, 
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-} from "reactflow";
-import "reactflow/dist/style.css";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Visualizer() {
   const [jsonText, setJsonText] = useState("{}");
   const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-  const buildGraph = useCallback((data: any, parentId = "", x = 0, y = 0, depth = 0): { nodes: Node[], edges: Edge[] } => {
-    const newNodes: Node[] = [];
-    const newEdges: Edge[] = [];
-    const horizontalSpacing = 250;
-    const verticalSpacing = 150;
-
-    const createNode = (id: string, label: string, type: "object" | "array" | "value", value?: any) => {
-      const colors = {
-        object: "hsl(var(--node-object))",
-        array: "hsl(var(--node-array))",
-        value: "hsl(var(--node-value))",
-      };
-
-      return {
-        id,
-        position: { x, y },
-        data: { label, value },
-        style: {
-          background: colors[type],
-          color: "white",
-          border: "2px solid rgba(255,255,255,0.2)",
-          borderRadius: type === "array" ? "50%" : "8px",
-          padding: "12px",
-          fontSize: "12px",
-          fontWeight: "bold",
-          minWidth: type === "value" ? "100px" : "140px",
-        },
-      };
-    };
-
-    const processValue = (key: string, value: any, currentId: string, currentX: number, currentY: number, currentDepth: number) => {
-      if (value === null || value === undefined) {
-        const nodeId = `${currentId}-${key}`;
-        newNodes.push(createNode(nodeId, `${key}: null`, "value", null));
-        newEdges.push({ id: `${currentId}-${nodeId}`, source: currentId, target: nodeId });
-      } else if (typeof value === "object" && !Array.isArray(value)) {
-        const nodeId = `${currentId}-${key}`;
-        newNodes.push(createNode(nodeId, key, "object"));
-        if (currentId) {
-          newEdges.push({ id: `${currentId}-${nodeId}`, source: currentId, target: nodeId });
-        }
-        
-        const keys = Object.keys(value);
-        keys.forEach((k, i) => {
-          const childX = currentX + (i - keys.length / 2) * horizontalSpacing;
-          const childY = currentY + verticalSpacing;
-          const result = processValue(k, value[k], nodeId, childX, childY, currentDepth + 1);
-          newNodes.push(...result.nodes);
-          newEdges.push(...result.edges);
-        });
-      } else if (Array.isArray(value)) {
-        const nodeId = `${currentId}-${key}`;
-        newNodes.push(createNode(nodeId, `${key}[]`, "array"));
-        if (currentId) {
-          newEdges.push({ id: `${currentId}-${nodeId}`, source: currentId, target: nodeId });
-        }
-        
-        value.forEach((item, i) => {
-          const childX = currentX + (i - value.length / 2) * horizontalSpacing;
-          const childY = currentY + verticalSpacing;
-          const result = processValue(`[${i}]`, item, nodeId, childX, childY, currentDepth + 1);
-          newNodes.push(...result.nodes);
-          newEdges.push(...result.edges);
-        });
-      } else {
-        const nodeId = `${currentId}-${key}`;
-        const displayValue = typeof value === "string" ? `"${value}"` : String(value);
-        newNodes.push(createNode(nodeId, `${key}: ${displayValue}`, "value", value));
-        if (currentId) {
-          newEdges.push({ id: `${currentId}-${nodeId}`, source: currentId, target: nodeId });
-        }
-      }
-      
-      return { nodes: newNodes, edges: newEdges };
-    };
-
-    const rootId = "root";
-    if (typeof data === "object" && !Array.isArray(data)) {
-      newNodes.push(createNode(rootId, "root", "object"));
-      const keys = Object.keys(data);
-      keys.forEach((key, i) => {
-        const childX = (i - keys.length / 2) * horizontalSpacing;
-        const childY = verticalSpacing;
-        const result = processValue(key, data[key], rootId, childX, childY, 1);
-        newNodes.push(...result.nodes);
-        newEdges.push(...result.edges);
-      });
-    }
-
-    return { nodes: newNodes, edges: newEdges };
-  }, []);
-
-  const handleParse = useCallback(() => {
-    try {
-      const parsed = JSON.parse(jsonText);
-      setError("");
-      const { nodes: newNodes, edges: newEdges } = buildGraph(parsed);
-      setNodes(newNodes);
-      setEdges(newEdges);
-      toast.success("JSON parsed and visualized!");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid JSON");
-      toast.error("Failed to parse JSON");
-    }
-  }, [jsonText, buildGraph, setNodes, setEdges]);
-
-  const handleFormat = () => {
-    try {
-      const parsed = JSON.parse(jsonText);
-      setJsonText(JSON.stringify(parsed, null, 2));
-      toast.success("JSON formatted!");
-    } catch (err) {
-      toast.error("Cannot format invalid JSON");
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [explanation, setExplanation] = useState("");
+  const [documentation, setDocumentation] = useState("");
+  const [summary, setSummary] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [activeTab, setActiveTab] = useState("explain");
 
   const handleUpload = () => {
     const input = document.createElement("input");
@@ -149,13 +29,96 @@ export default function Visualizer() {
       if (file) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          setJsonText(event.target?.result as string);
+          const text = event.target?.result as string;
+          setJsonText(text);
           toast.success("File loaded!");
         };
         reader.readAsText(file);
       }
     };
     input.click();
+  };
+
+  const handleFormat = () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      setJsonText(JSON.stringify(parsed, null, 2));
+      toast.success("JSON formatted!");
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid JSON");
+      toast.error("Cannot format invalid JSON");
+    }
+  };
+
+  const analyzeJSON = async (type: "explain" | "docs" | "summary" | "query", query?: string) => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      setError("");
+      setLoading(true);
+
+      const { data, error: functionError } = await supabase.functions.invoke('analyze-json', {
+        body: { jsonData: parsed, type, query }
+      });
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data.result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to analyze JSON";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExplain = async () => {
+    const result = await analyzeJSON("explain");
+    if (result) {
+      setExplanation(result);
+      setActiveTab("explain");
+      toast.success("JSON explained!");
+    }
+  };
+
+  const handleGenerateDocs = async () => {
+    const result = await analyzeJSON("docs");
+    if (result) {
+      setDocumentation(result);
+      setActiveTab("docs");
+      toast.success("Documentation generated!");
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    const result = await analyzeJSON("summary");
+    if (result) {
+      setSummary(result);
+      setActiveTab("summary");
+      toast.success("Summary generated!");
+    }
+  };
+
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = { role: "user", content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput("");
+
+    const result = await analyzeJSON("query", chatInput);
+    if (result) {
+      const aiMessage = { role: "assistant", content: result };
+      setChatMessages(prev => [...prev, aiMessage]);
+    }
   };
 
   return (
@@ -167,11 +130,11 @@ export default function Visualizer() {
       >
         <div className="mb-6">
           <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-            <Network className="w-8 h-8 text-accent" />
-            JSON Visualizer
+            <Sparkles className="w-8 h-8 text-accent" />
+            AI JSON Explainer
           </h1>
           <p className="text-muted-foreground">
-            Explore JSON data with interactive node graphs
+            Transform complex JSON into human-readable explanations and documentation
           </p>
         </div>
 
@@ -197,13 +160,6 @@ export default function Visualizer() {
                 >
                   Format
                 </Button>
-                <Button
-                  onClick={handleParse}
-                  className="gradient-accent text-white"
-                  size="sm"
-                >
-                  Visualize
-                </Button>
               </div>
             </div>
 
@@ -214,7 +170,7 @@ export default function Visualizer() {
               </div>
             )}
 
-            <div className="flex-1 border border-border rounded-lg overflow-hidden">
+            <div className="flex-1 border border-border rounded-lg overflow-hidden mb-4">
               <Editor
                 height="100%"
                 defaultLanguage="json"
@@ -230,48 +186,125 @@ export default function Visualizer() {
                 }}
               />
             </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                onClick={handleExplain}
+                disabled={loading}
+                className="gradient-primary text-white"
+                size="sm"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                Explain
+              </Button>
+              <Button
+                onClick={handleGenerateDocs}
+                disabled={loading}
+                className="gradient-accent text-white"
+                size="sm"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4 mr-2" />}
+                Docs
+              </Button>
+              <Button
+                onClick={handleGenerateSummary}
+                disabled={loading}
+                className="gradient-primary text-white"
+                size="sm"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSearch className="w-4 h-4 mr-2" />}
+                Summary
+              </Button>
+            </div>
           </Card>
 
           <Card className="glass-card p-6 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Graph View</h2>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search by key..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 bg-secondary/50"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-accent/50 hover:bg-accent/10"
-                >
-                  <Search className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold mb-4">AI Analysis</h2>
 
-            <div className="flex-1 border border-border rounded-lg overflow-hidden bg-secondary/20">
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                fitView
-              >
-                <Background />
-                <Controls />
-                <MiniMap
-                  nodeColor={(node) => {
-                    if (node.style?.background) {
-                      return node.style.background as string;
-                    }
-                    return "#333";
-                  }}
-                />
-              </ReactFlow>
-            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="explain">Explain</TabsTrigger>
+                <TabsTrigger value="docs">Docs</TabsTrigger>
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="explain" className="flex-1 overflow-auto">
+                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+                  {explanation ? (
+                    <p className="whitespace-pre-wrap">{explanation}</p>
+                  ) : (
+                    <p className="text-muted-foreground">Click "Explain" to get a plain English explanation of your JSON structure.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="docs" className="flex-1 overflow-auto">
+                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+                  {documentation ? (
+                    <p className="whitespace-pre-wrap">{documentation}</p>
+                  ) : (
+                    <p className="text-muted-foreground">Click "Docs" to generate comprehensive developer documentation.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="summary" className="flex-1 overflow-auto">
+                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+                  {summary ? (
+                    <p className="whitespace-pre-wrap">{summary}</p>
+                  ) : (
+                    <p className="text-muted-foreground">Click "Summary" to get a concise overview with key insights.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="chat" className="flex-1 flex flex-col">
+                <div className="flex-1 overflow-auto p-4 bg-secondary/20 rounded-lg border border-border mb-4 space-y-3">
+                  {chatMessages.length === 0 ? (
+                    <p className="text-muted-foreground">Ask questions about your JSON data. For example: "What is the total count?" or "Which item has the highest value?"</p>
+                  ) : (
+                    chatMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg ${
+                          msg.role === "user"
+                            ? "bg-primary/20 ml-12"
+                            : "bg-accent/20 mr-12"
+                        }`}
+                      >
+                        <p className="text-sm font-semibold mb-1">
+                          {msg.role === "user" ? "You" : "AI"}
+                        </p>
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Ask a question about your JSON..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleChatSubmit();
+                      }
+                    }}
+                    className="min-h-[60px] bg-secondary/50"
+                  />
+                  <Button
+                    onClick={handleChatSubmit}
+                    disabled={loading || !chatInput.trim()}
+                    className="gradient-accent text-white"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           </Card>
         </div>
       </motion.div>
