@@ -122,11 +122,11 @@ export default function Visualizer() {
   };
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="container mx-auto px-6 py-8 h-[calc(100vh-80px)]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-[1800px] mx-auto"
+        className="max-w-[1800px] mx-auto h-full flex flex-col"
       >
         <div className="mb-6">
           <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
@@ -138,9 +138,9 @@ export default function Visualizer() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+        <div className="grid lg:grid-cols-2 gap-6 flex-1 min-h-0">
           <Card className="glass-card p-6 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="text-xl font-semibold">JSON Editor</h2>
               <div className="flex gap-2">
                 <Button
@@ -164,13 +164,13 @@ export default function Visualizer() {
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/50 rounded-lg flex items-start gap-2">
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/50 rounded-lg flex items-start gap-2 flex-shrink-0">
                 <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive break-words">{error}</p>
               </div>
             )}
 
-            <div className="flex-1 border border-border rounded-lg overflow-hidden mb-4">
+            <div className="flex-1 border border-border rounded-lg overflow-hidden mb-4 min-h-0">
               <Editor
                 height="100%"
                 defaultLanguage="json"
@@ -187,7 +187,7 @@ export default function Visualizer() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 flex-shrink-0">
               <Button
                 onClick={handleExplain}
                 disabled={loading}
@@ -218,51 +218,51 @@ export default function Visualizer() {
             </div>
           </Card>
 
-          <Card className="glass-card p-6 flex flex-col">
-            <h2 className="text-xl font-semibold mb-4">AI Analysis</h2>
+          <Card className="glass-card p-6 flex flex-col min-h-0">
+            <h2 className="text-xl font-semibold mb-4 flex-shrink-0">AI Analysis</h2>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-4 mb-4 flex-shrink-0">
                 <TabsTrigger value="explain">Explain</TabsTrigger>
                 <TabsTrigger value="docs">Docs</TabsTrigger>
                 <TabsTrigger value="summary">Summary</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="explain" className="flex-1 overflow-auto">
-                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+              <TabsContent value="explain" className="flex-1 min-h-0 mt-0">
+                <div className="p-4 bg-secondary/20 rounded-lg border border-border h-full overflow-auto">
                   {explanation ? (
-                    <p className="whitespace-pre-wrap">{explanation}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{explanation}</p>
                   ) : (
-                    <p className="text-muted-foreground">Click "Explain" to get a plain English explanation of your JSON structure.</p>
+                    <p className="text-sm text-muted-foreground">Click "Explain" to get a plain English explanation of your JSON structure.</p>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="docs" className="flex-1 overflow-auto">
-                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+              <TabsContent value="docs" className="flex-1 min-h-0 mt-0">
+                <div className="p-4 bg-secondary/20 rounded-lg border border-border h-full overflow-auto">
                   {documentation ? (
-                    <p className="whitespace-pre-wrap">{documentation}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{documentation}</p>
                   ) : (
-                    <p className="text-muted-foreground">Click "Docs" to generate comprehensive developer documentation.</p>
+                    <p className="text-sm text-muted-foreground">Click "Docs" to generate comprehensive developer documentation.</p>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="summary" className="flex-1 overflow-auto">
-                <div className="prose prose-invert max-w-none p-4 bg-secondary/20 rounded-lg border border-border h-full">
+              <TabsContent value="summary" className="flex-1 min-h-0 mt-0">
+                <div className="p-4 bg-secondary/20 rounded-lg border border-border h-full overflow-auto">
                   {summary ? (
-                    <p className="whitespace-pre-wrap">{summary}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{summary}</p>
                   ) : (
-                    <p className="text-muted-foreground">Click "Summary" to get a concise overview with key insights.</p>
+                    <p className="text-sm text-muted-foreground">Click "Summary" to get a concise overview with key insights.</p>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="chat" className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-auto p-4 bg-secondary/20 rounded-lg border border-border mb-4 space-y-3">
+              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 mt-0">
+                <div className="flex-1 overflow-auto p-4 bg-secondary/20 rounded-lg border border-border mb-4 space-y-3 min-h-0">
                   {chatMessages.length === 0 ? (
-                    <p className="text-muted-foreground">Ask questions about your JSON data. For example: "What is the total count?" or "Which item has the highest value?"</p>
+                    <p className="text-sm text-muted-foreground">Ask questions about your JSON data. For example: "What is the total count?" or "Which item has the highest value?"</p>
                   ) : (
                     chatMessages.map((msg, idx) => (
                       <div
@@ -276,13 +276,13 @@ export default function Visualizer() {
                         <p className="text-sm font-semibold mb-1">
                           {msg.role === "user" ? "You" : "AI"}
                         </p>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                       </div>
                     ))
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <Textarea
                     placeholder="Ask a question about your JSON..."
                     value={chatInput}
@@ -293,12 +293,13 @@ export default function Visualizer() {
                         handleChatSubmit();
                       }
                     }}
-                    className="min-h-[60px] bg-secondary/50"
+                    className="h-[80px] bg-secondary/50 resize-none"
+                    rows={3}
                   />
                   <Button
                     onClick={handleChatSubmit}
                     disabled={loading || !chatInput.trim()}
-                    className="gradient-accent text-white"
+                    className="gradient-accent text-white self-end"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
                   </Button>

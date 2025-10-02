@@ -65,13 +65,13 @@ export default function Enhancer() {
   };
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="container mx-auto px-6 py-8 h-[calc(100vh-80px)]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto"
+        className="max-w-7xl mx-auto h-full flex flex-col"
       >
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
             <Sparkles className="w-8 h-8 text-primary" />
             JSON Prompt Enhancer
@@ -81,10 +81,10 @@ export default function Enhancer() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="glass-card p-6">
+        <div className="grid lg:grid-cols-2 gap-6 flex-1 min-h-0">
+          <Card className="glass-card p-6 flex flex-col">
             <h2 className="text-xl font-semibold mb-4">Input</h2>
-            <div className="space-y-4">
+            <div className="flex-1 flex flex-col space-y-4 min-h-0">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">
                   Prompt Type
@@ -93,7 +93,7 @@ export default function Enhancer() {
                   <SelectTrigger className="bg-secondary/50">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border z-50">
                     {promptTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -103,7 +103,7 @@ export default function Enhancer() {
                 </Select>
               </div>
 
-              <div>
+              <div className="flex-1 flex flex-col min-h-0">
                 <label className="text-sm text-muted-foreground mb-2 block">
                   Raw Prompt
                 </label>
@@ -111,7 +111,7 @@ export default function Enhancer() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter your raw prompt here..."
-                  className="min-h-[400px] bg-secondary/50 font-mono text-sm"
+                  className="flex-1 bg-secondary/50 font-mono text-sm resize-none"
                 />
               </div>
 
@@ -136,8 +136,8 @@ export default function Enhancer() {
             </div>
           </Card>
 
-          <Card className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
+          <Card className="glass-card p-6 flex flex-col">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="text-xl font-semibold">Enhanced Output</h2>
               {enhancedJson && (
                 <div className="flex gap-2">
@@ -162,24 +162,24 @@ export default function Enhancer() {
             </div>
 
             {enhancedJson ? (
-              <div className="space-y-4">
-                <div className="bg-secondary/50 rounded-lg p-4 overflow-auto max-h-[400px]">
-                  <pre className="text-sm font-mono">{enhancedJson}</pre>
+              <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-hidden">
+                <div className="bg-secondary/50 rounded-lg p-4 overflow-auto border border-border flex-1 min-h-0">
+                  <pre className="text-sm font-mono whitespace-pre-wrap break-words">{enhancedJson}</pre>
                 </div>
                 
                 {comparison && (
-                  <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+                  <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 overflow-auto max-h-[200px] flex-shrink-0">
                     <h3 className="text-sm font-semibold text-accent mb-2">
                       Before / After Comparison
                     </h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
                       {comparison}
                     </p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <p>Enhanced JSON will appear here</p>
               </div>
             )}
